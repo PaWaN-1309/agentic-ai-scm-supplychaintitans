@@ -1,0 +1,33 @@
+
+Analyze the current inventory records for all products.
+
+Your responsibilities are to:
+
+1. Review the current stock level for each product.
+2. Compare the current stock with its reorder threshold.
+3. Identify products that require immediate replenishment.
+4. Classify each product as:
+   - LOW_STOCK
+   - SUFFICIENT
+5. Highlight any products that may cause stock-outs if demand continues.
+6. Provide a concise inventory summary with recommended actions.
+
+Use only the available inventory data. Do not make assumptions or fabricate values.
+
+expected_output="""
+Inventory Analysis Report
+
+For each product provide:
+- SKU
+- Product Name
+- Current Stock
+- Reorder Level
+- Inventory Status (LOW_STOCK / SUFFICIENT)
+- Replenishment Required (Yes/No)
+
+Finally include:
+- Total Products Analyzed
+- Number of Low Stock Products
+- Number of Products Requiring Replenishment
+- Overall Inventory Health (Good / Moderate / Critical)
+"""

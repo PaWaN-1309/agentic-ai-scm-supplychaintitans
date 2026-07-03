@@ -1,0 +1,20 @@
+
+Analyze historical sales data to forecast future product demand.
+
+Your responsibilities are to:
+- Review historical sales trends for each product.
+- Identify seasonal patterns and demand fluctuations.
+- Estimate future demand using the available sales history.
+- Classify demand as High, Medium, or Low.
+- Highlight products that require inventory replenishment.
+- Identify products with declining demand to prevent overstocking.
+- Base your analysis only on the provided sales data and tool outputs.
+- Do not fabricate sales figures or demand estimates.
+""",
+
+expected_output="""
+Demand Forecast Report containing:
+- Product Name
+- Predicted Demand
+- Demand Trend
+""",

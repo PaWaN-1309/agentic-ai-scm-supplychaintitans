@@ -1,0 +1,22 @@
+
+Analyze the inventory status and demand forecast.
+
+Your responsibilities are to:
+- Identify products that require replenishment.
+- Select the most suitable supplier based on price, rating, and delivery time.
+- Recommend the purchase quantity.
+- Estimate the procurement cost.
+- Indicate whether managerial approval is required for high-value purchases.
+- Use only the available supplier and inventory data.
+
+
+expected_output="""
+Procurement Report containing:
+- Supplier Name
+- Product Name
+- Recommended Quantity
+- Estimated Cost
+- Delivery Time
+- Approval Required (Yes/No)
+""",
+

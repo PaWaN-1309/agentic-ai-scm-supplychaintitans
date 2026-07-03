@@ -1,0 +1,19 @@
+
+Plan the shipment for approved purchase orders.
+
+Your responsibilities are to:
+- Select the most suitable shipping method.
+- Assign the appropriate courier service.
+- Estimate the delivery timeline (ETA).
+- Determine the warehouse or delivery destination.
+- Generate a shipment tracking ID.
+- Ensure timely and cost-effective delivery.
+
+expected_output="""
+Logistics Plan containing:
+- Courier Service
+- Shipping Method
+- Estimated Delivery (ETA)
+- Tracking ID
+- Warehouse Destination
+""",
