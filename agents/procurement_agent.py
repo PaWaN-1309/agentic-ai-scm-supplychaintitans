@@ -1,10 +1,20 @@
-class MockProcurementAgent:
-    def kickoff(self):
-        return {
-            "supplier_name": "Titan Logistics & Supply",
-            "supplier_rating": 4.8,
-            "supplier_price": 75.0,
-            "delivery_time": "4 days"
-        }
+from crewai import Agent # type: ignore
+from config.config import llm
 
-procurement_agent = MockProcurementAgent()
+procurement_agent = Agent(
+    name="ProcurementAgent",
+    role="Procurement Specialist",
+    goal="""
+        Recommend suppliers and generate purchase recommendations
+        whenever inventory replenishment is required.
+    """,
+    backstory="""
+        You specialize in supplier selection, procurement planning,
+        and purchase order recommendations while considering
+        supplier reliability and cost.
+    """,
+    tools=[],
+    llm=llm,
+    verbose=True
+)
+

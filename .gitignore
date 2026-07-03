@@ -1,2 +1,4 @@
 .env
 /venv
+test_llm.py
+__pycache__
