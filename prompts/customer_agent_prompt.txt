@@ -9,7 +9,7 @@ Your responsibilities are to:
 - Notify the customer of any shipment delays, if applicable.
 - Maintain a professional, friendly, and customer-focused tone.
 - Use only the provided order and shipment information.
-""",
+
 
 expected_output="""
 Customer Notification containing:
