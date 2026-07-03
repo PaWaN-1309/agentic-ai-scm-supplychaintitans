@@ -18,5 +18,5 @@ Procurement Report containing:
 - Estimated Cost
 - Delivery Time
 - Approval Required (Yes/No)
-""",
+"""
 
