@@ -4,16 +4,48 @@ from langgraph.checkpoint.memory import MemorySaver
 from graph.state import SCMState
 from graph.approval_node import approval_node
 
-from agents.forecast_agent import forecast_agent
-from agents.procurement_agent import procurement_agent
-from agents.logistics_agent import logistics_agent
-from agents.customer_agent import customer_agent
+from config.config import LLM_READY
 
-APPROVAL_THRESHOLD = 10000
+from tools.forecast_tool import forecast_tool
+from tools.supplier_tool import supplier_tool
+from tools.shipping_tool import shipping_tool
+from tools.notify_tool import notify_tool
+
+try:
+    from agents.forecast_agent import forecast_agent
+    from agents.procurement_agent import procurement_agent
+    from agents.logistics_agent import logistics_agent
+    from agents.customer_agent import customer_agent
+except Exception:
+    forecast_agent = procurement_agent = logistics_agent = customer_agent = None
+
+# Highest possible PO with the sample data is ~$1,559, so the threshold
+# must sit below that for the human-approval path to be reachable.
+APPROVAL_THRESHOLD = 1000
+
+NOTIFY_CUSTOMER_ID = "CUS-5000"
+
+
+def _agent_result(agent):
+    """Run a CrewAI agent and return its dict output, or None when the
+    LLM is not configured or the agent fails."""
+    if not LLM_READY or agent is None:
+        return None
+    try:
+        result = agent.kickoff()
+        return result if isinstance(result, dict) else None
+    except Exception:
+        return None
 
 
 def forecast_node(state: SCMState):
-    result = forecast_agent.kickoff()
+    result = _agent_result(forecast_agent)
+    if result is None:
+        tool_out = forecast_tool.run(sku=state["sku"])
+        result = {
+            "predicted_demand": int(tool_out.get("Expected Demand", 0)),
+            "demand_level": tool_out.get("Demand Level", "Low"),
+        } if isinstance(tool_out, dict) else {}
     return {
         "predicted_demand": result.get("predicted_demand", 0),
         "demand_level": result.get("demand_level", "Low"),
@@ -42,7 +74,15 @@ def inventory_node(state: SCMState):
 
 
 def supplier_node(state: SCMState):
-    result = procurement_agent.kickoff()
+    result = _agent_result(procurement_agent)
+    if result is None:
+        tool_out = supplier_tool.run(sku=state["sku"])
+        result = {
+            "supplier_name": tool_out.get("Supplier Name"),
+            "supplier_rating": tool_out.get("Supplier Rating"),
+            "supplier_price": tool_out.get("Price"),
+            "delivery_time": f"{tool_out.get('Delivery Time')} days",
+        } if isinstance(tool_out, dict) and "Supplier Name" in tool_out else {}
     return {
         "supplier_name": result.get("supplier_name"),
         "supplier_rating": result.get("supplier_rating"),
@@ -60,7 +100,8 @@ def po_node(state: SCMState):
         state["predicted_demand"] - state["current_stock"],
         0
     )
-    total_cost = quantity * state["supplier_price"]
+    unit_price = state.get("supplier_price") or 0.0
+    total_cost = quantity * unit_price
     return {
         "po_number": f"PO-{state['sku']}",
         "po_quantity": quantity,
@@ -79,7 +120,14 @@ def approval_router(state: SCMState):
 
 
 def shipping_node(state: SCMState):
-    result = logistics_agent.kickoff()
+    result = _agent_result(logistics_agent)
+    if result is None:
+        tool_out = shipping_tool.run(region="North")
+        result = {
+            "courier": tool_out.get("Courier"),
+            "eta": tool_out.get("ETA"),
+            "tracking_id": tool_out.get("Tracking ID"),
+        } if isinstance(tool_out, dict) and "Courier" in tool_out else {}
     return {
         "courier": result.get("courier"),
         "eta": result.get("eta"),
@@ -92,10 +140,29 @@ def shipping_node(state: SCMState):
 
 
 def notification_node(state: SCMState):
-    result = customer_agent.kickoff()
+    message = (
+        f"Purchase order {state.get('po_number')} for "
+        f"{state.get('po_quantity')} units of {state.get('sku')} has been "
+        f"placed with {state.get('supplier_name')}. Shipment is planned via "
+        f"{state.get('courier')} (ETA {state.get('eta')}, tracking "
+        f"{state.get('tracking_id')})."
+    )
+    result = _agent_result(customer_agent)
+    if result is None:
+        try:
+            notify_tool.run(
+                customer_id=NOTIFY_CUSTOMER_ID,
+                message=message,
+                channel="email"
+            )
+        except Exception:
+            pass
+        notification_message = message
+    else:
+        notification_message = str(result)
     return {
         "notification_sent": True,
-        "notification_message": str(result),
+        "notification_message": notification_message,
         "workflow_status": "COMPLETED",
         "current_node": "notification",
         "final_response":

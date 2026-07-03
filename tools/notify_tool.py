@@ -35,7 +35,7 @@ class NotifyTool(BaseTool):
 
         customer = customer.iloc[0]
 
-        if channel.lower() == "email":
+        if channel.lower() == "email" or "phone" not in customer.index:
             contact = customer["email"]
         else:
             contact = customer["phone"]
