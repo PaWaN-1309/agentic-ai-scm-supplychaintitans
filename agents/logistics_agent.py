@@ -1,5 +1,6 @@
 from crewai import Agent # type: ignore
 from config.config import llm
+from tools.shipping_tool import shipping_tool
 
 logistics_agent = Agent(
     name="LogisticsAgent",
@@ -12,7 +13,7 @@ logistics_agent = Agent(
         You coordinate warehouse dispatch, transportation,
         and delivery schedules to ensure timely product movement.
     """,
-    tools=[],
+    tools=[shipping_tool],
     llm=llm,
     verbose=True
 )

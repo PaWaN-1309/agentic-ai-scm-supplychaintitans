@@ -1,6 +1,5 @@
 from typing import TypedDict, Optional
 
-
 class SCMState(TypedDict):
     user_query: str
     session_id: str

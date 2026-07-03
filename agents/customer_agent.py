@@ -1,5 +1,6 @@
 from crewai import Agent # type: ignore
 from config.config import llm
+from tools.notify_tool import notify_tool # type: ignore
 
 customer_agent = Agent(
     name="CustomerAgent",
@@ -13,7 +14,7 @@ customer_agent = Agent(
         by communicating accurate and timely updates about
         order processing and deliveries.
     """,
-    tools=[],
+    tools=[notify_tool],
     llm=llm,
     verbose=True
 )

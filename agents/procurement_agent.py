@@ -1,5 +1,6 @@
 from crewai import Agent # type: ignore
 from config.config import llm
+from tools.supplier_tool import supplier_tool
 
 procurement_agent = Agent(
     name="ProcurementAgent",
@@ -13,7 +14,7 @@ procurement_agent = Agent(
         and purchase order recommendations while considering
         supplier reliability and cost.
     """,
-    tools=[],
+    tools=[supplier_tool],
     llm=llm,
     verbose=True
 )

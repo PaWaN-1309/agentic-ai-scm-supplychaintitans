@@ -1,5 +1,6 @@
 from crewai import Agent # type: ignore
 from config.config import llm
+from tools.inventory_tool import inventory_tool # type: ignore
 
 inventory_agent = Agent(
     name="InventoryAgent",
@@ -9,7 +10,7 @@ inventory_agent = Agent(
     backstory="You are an experienced inventory analyst responsible for monitoring \
         warehouse stock levels. You help identify products that require \
         replenishment before stock shortages occur.",
-    tools=[],
+    tools=[inventory_tool],
     llm=llm,
     verbose=True
 )

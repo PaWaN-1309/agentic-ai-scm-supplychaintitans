@@ -1,5 +1,6 @@
 from crewai import Agent # type: ignore
 from config.config import llm
+from tools.forecast_tool import forecast_tool
 
 forecast_agent = Agent(
     name="ForecastAgent",
@@ -10,7 +11,7 @@ forecast_agent = Agent(
         seasonal patterns, and customer demand to help maintain
         optimal inventory levels.
     """,
-    tools=[],
+    tools=[forecast_tool],
     llm=llm,
     verbose=True
 )
