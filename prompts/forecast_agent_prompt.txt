@@ -10,7 +10,6 @@ Your responsibilities are to:
 - Identify products with declining demand to prevent overstocking.
 - Base your analysis only on the provided sales data and tool outputs.
 - Do not fabricate sales figures or demand estimates.
-""",
 
 expected_output="""
 Demand Forecast Report containing:
