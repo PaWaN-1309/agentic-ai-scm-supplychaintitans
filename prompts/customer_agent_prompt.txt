@@ -1,29 +1,22 @@
 
-Generate a professional customer notification based on the order and shipment details.
+Generate a customer notification based on the current order and shipment details.
 
 Your responsibilities are to:
-- Inform the customer about the current order status.
+- Inform the customer about the order status.
 - Include the Purchase Order Number.
-- Mention the shipment status.
-- Provide the courier service name.
-- Include the estimated delivery date (ETA).
-- Include the tracking ID, if available.
-- If the shipment is delayed, politely explain the reason and apologize.
-- If the order has been approved and dispatched, reassure the customer that it is on its way.
+- Provide the courier service and tracking ID.
+- Mention the estimated delivery date (ETA).
+- Notify the customer of any shipment delays, if applicable.
 - Maintain a professional, friendly, and customer-focused tone.
-- Do not invent any information that is not provided.
-
-expected_output="""
-Return ONLY valid JSON.
-
-{
-    "notification_sent": true,
-    "notification_type": "Order Confirmation | Shipment Update | Delay Notification",
-    "subject": "Your Order Update",
-    "message": "Professional customer notification message.",
-    "tracking_id": "TRK123456",
-    "estimated_delivery": "2026-07-08"
-}
+- Use only the provided order and shipment information.
 """,
 
-agent=customer_agent
+expected_output="""
+Customer Notification containing:
+- Order Status
+- Purchase Order Number
+- Courier Service
+- Tracking ID
+- Estimated Delivery (ETA)
+- Customer Message
+""",
