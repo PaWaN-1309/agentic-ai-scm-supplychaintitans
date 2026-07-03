@@ -1,0 +1,38 @@
+from typing import TypedDict, Optional
+
+
+class SCMState(TypedDict):
+    user_query: str
+    session_id: str
+    timestamp: str
+    sku: str
+    predicted_demand: int
+    demand_level: str
+    current_stock: int
+    reorder_level: int
+    warehouse: str
+    inventory_status: str
+    supplier_name: str
+    supplier_rating: float
+    supplier_price: float
+    delivery_time: str
+    po_number: str
+    po_quantity: int
+    po_total_cost: float
+    approval_required: bool
+    approval_status: str
+    approver: str
+    approval_comments: str
+    courier: str
+    eta: str
+    tracking_id: str
+    notification_sent: bool
+    notification_message: str
+    current_node: str
+    next_node: str
+    workflow_status: str
+    messages: list[str]
+    execution_history: list[str]
+    error: Optional[str]
+    retry_count: int
+    final_response: str

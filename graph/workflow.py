@@ -1,0 +1,167 @@
+from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.memory import MemorySaver
+
+from graph.state import SCMState
+from graph.approval_node import approval_node
+
+from agents.forecast_agent import forecast_agent
+from agents.procurement_agent import procurement_agent
+from agents.logistics_agent import logistics_agent
+from agents.customer_agent import customer_agent
+
+APPROVAL_THRESHOLD = 10000
+
+
+def forecast_node(state: SCMState):
+    result = forecast_agent.kickoff()
+    return {
+        "predicted_demand": result.get("predicted_demand", 0),
+        "demand_level": result.get("demand_level", "Low"),
+        "current_node": "forecast",
+        "next_node": "inventory",
+        "execution_history": state.get("execution_history", [])
+        + ["Forecast Completed"]
+    }
+
+
+def inventory_node(state: SCMState):
+    current_stock = state["current_stock"]
+    reorder_level = state["reorder_level"]
+    inventory_status = (
+        "LOW_STOCK"
+        if current_stock < reorder_level
+        else "SUFFICIENT"
+    )
+    return {
+        "inventory_status": inventory_status,
+        "current_node": "inventory",
+        "next_node": "supplier",
+        "execution_history": state["execution_history"]
+        + ["Inventory Checked"]
+    }
+
+
+def supplier_node(state: SCMState):
+    result = procurement_agent.kickoff()
+    return {
+        "supplier_name": result.get("supplier_name"),
+        "supplier_rating": result.get("supplier_rating"),
+        "supplier_price": result.get("supplier_price"),
+        "delivery_time": result.get("delivery_time"),
+        "current_node": "supplier",
+        "next_node": "purchase_order",
+        "execution_history": state["execution_history"]
+        + ["Supplier Selected"]
+    }
+
+
+def po_node(state: SCMState):
+    quantity = max(
+        state["predicted_demand"] - state["current_stock"],
+        0
+    )
+    total_cost = quantity * state["supplier_price"]
+    return {
+        "po_number": f"PO-{state['sku']}",
+        "po_quantity": quantity,
+        "po_total_cost": total_cost,
+        "approval_required": total_cost > APPROVAL_THRESHOLD,
+        "current_node": "purchase_order",
+        "execution_history": state["execution_history"]
+        + ["PO Created"]
+    }
+
+
+def approval_router(state: SCMState):
+    if state["approval_required"]:
+        return "approval"
+    return "shipping"
+
+
+def shipping_node(state: SCMState):
+    result = logistics_agent.kickoff()
+    return {
+        "courier": result.get("courier"),
+        "eta": result.get("eta"),
+        "tracking_id": result.get("tracking_id"),
+        "current_node": "shipping",
+        "next_node": "notification",
+        "execution_history": state["execution_history"]
+        + ["Shipping Planned"]
+    }
+
+
+def notification_node(state: SCMState):
+    result = customer_agent.kickoff()
+    return {
+        "notification_sent": True,
+        "notification_message": str(result),
+        "workflow_status": "COMPLETED",
+        "current_node": "notification",
+        "final_response":
+            f"PO {state['po_number']} approved and shipment created.",
+        "execution_history": state["execution_history"]
+        + ["Notification Sent"]
+    }
+
+
+def rejected_node(state: SCMState):
+    return {
+        "workflow_status": "REJECTED",
+        "final_response":
+            f"PO {state['po_number']} was rejected.",
+        "execution_history": state["execution_history"]
+        + ["PO Rejected"]
+    }
+
+
+def approval_result_router(state: SCMState):
+    if state["approval_status"].lower() in ["approved", "edited"]:
+        return "shipping"
+    return "rejected"
+
+
+workflow = StateGraph(SCMState)
+
+workflow.add_node("forecast", forecast_node)
+workflow.add_node("inventory", inventory_node)
+workflow.add_node("supplier", supplier_node)
+workflow.add_node("purchase_order", po_node)
+workflow.add_node("approval", approval_node)
+workflow.add_node("shipping", shipping_node)
+workflow.add_node("notification", notification_node)
+workflow.add_node("rejected", rejected_node)
+
+workflow.set_entry_point("forecast")
+
+workflow.add_edge("forecast", "inventory")
+workflow.add_edge("inventory", "supplier")
+workflow.add_edge("supplier", "purchase_order")
+
+workflow.add_conditional_edges(
+    "purchase_order",
+    approval_router,
+    {
+        "approval": "approval",
+        "shipping": "shipping"
+    }
+)
+
+workflow.add_conditional_edges(
+    "approval",
+    approval_result_router,
+    {
+        "shipping": "shipping",
+        "rejected": "rejected"
+    }
+)
+
+workflow.add_edge("shipping", "notification")
+workflow.add_edge("notification", END)
+workflow.add_edge("rejected", END)
+
+memory = MemorySaver()
+
+graph = workflow.compile(
+    checkpointer=memory
+)
