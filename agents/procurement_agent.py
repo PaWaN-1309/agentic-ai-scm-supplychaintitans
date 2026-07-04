@@ -1,21 +1,15 @@
-from crewai import Agent # type: ignore
+from crewai import Agent  # type: ignore
 from config.config import llm
-from tools.supplier_tool import supplier_tool
+from tools.supplier_tool import get_supplier_quotes
+from prompts.procurement_prompt import PROCUREMENT_ROLE, PROCUREMENT_GOAL, PROCUREMENT_BACKSTORY
 
-procurement_agent = Agent(
-    name="ProcurementAgent",
-    role="Procurement Specialist",
-    goal="""
-        Recommend suppliers and generate purchase recommendations
-        whenever inventory replenishment is required.
-    """,
-    backstory="""
-        You specialize in supplier selection, procurement planning,
-        and purchase order recommendations while considering
-        supplier reliability and cost.
-    """,
-    tools=[supplier_tool],
-    llm=llm,
-    verbose=True
-)
-
+def get_procurement_agent() -> Agent:
+    return Agent(
+        role=PROCUREMENT_ROLE,
+        goal=PROCUREMENT_GOAL,
+        backstory=PROCUREMENT_BACKSTORY,
+        tools=[get_supplier_quotes],
+        llm=llm,
+        verbose=True,
+        allow_delegation=False
+    )

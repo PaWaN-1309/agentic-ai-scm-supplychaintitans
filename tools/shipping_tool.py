@@ -1,57 +1,21 @@
-from typing import Type
+import pandas as pd  # type: ignore
+from crewai.tools import tool  # type: ignore
+from config.config import CARRIERS_CSV
 
-import pandas as pd
-import random
-from crewai.tools import BaseTool
-from pydantic import BaseModel, Field
-
-# Load carrier data once
-carrier_df = pd.read_csv("data/carriers.csv")
-
-
-class ShippingToolInput(BaseModel):
-    region: str = Field("North", description="Region to find a shipping option for")
-
-
-class ShippingTool(BaseTool):
-    name: str = "shipping_tool"
-    description: str = "Returns the best shipping option for a region."
-    args_schema: Type[BaseModel] = ShippingToolInput
-
-    def _run(self, region: str = "North"):
-        """
-        Returns the best shipping option for a region.
-
-        Input:
-            Region (optional)
-
-        Returns:
-            Courier
-            ETA
-            Tracking ID
-        """
-
-        # Find carriers serving the region
-        available = carrier_df[
-            carrier_df["regions_covered"].str.contains(region, case=False)
-        ]
-
-        if available.empty:
-            return {
-                "message": f"No carrier available for '{region}'."
-            }
-
-        # Choose fastest carrier
-        best = available.sort_values("eta_days").iloc[0]
-
-        tracking_id = f"TRK{random.randint(100000,999999)}"
-
-        return {
-            "Courier": best["carrier_name"],
-            "Service": best["service_level"],
-            "ETA": f"{best['eta_days']} Days",
-            "Tracking ID": tracking_id
-        }
-
-
-shipping_tool = ShippingTool()
+@tool("Get Shipping Carrier Rates and ETAs")
+def get_shipping_options(region: str = "") -> str:
+    """
+    Queries active carrier configurations to isolate available transit methods.
+    If a region parameter is specified, filters options strictly matching their coverage profiles.
+    """
+    try:
+        df = pd.read_csv(CARRIERS_CSV)
+        if region and region.strip():
+            region_upper = region.strip().upper()
+            matched = df[df['regions_covered'].str.upper().str.contains(region_upper, na=False)]
+            if matched.empty:
+                return f"No active carrier found explicitly covering '{region}'. Alternative system fallbacks:\n{df.to_string(index=False)}"
+            return matched.to_string(index=False)
+        return df.to_string(index=False)
+    except Exception as e:
+        return f"Error gathering freight metrics: {str(e)}"

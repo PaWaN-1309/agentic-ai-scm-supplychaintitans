@@ -1,54 +1,25 @@
-from typing import Type
+import pandas as pd  # type: ignore
+from crewai.tools import tool  # type: ignore
+from config.config import CUSTOMERS_CSV
 
-import pandas as pd
-from crewai.tools import BaseTool
-from pydantic import BaseModel, Field
-
-customers_df = pd.read_csv("data/customers.csv")
-
-
-class NotifyToolInput(BaseModel):
-    customer_id: str = Field(..., description="Customer identifier")
-    message: str = Field(..., description="Notification message to send")
-    channel: str = Field("email", description="Notification channel")
-
-
-class NotifyTool(BaseTool):
-    name: str = "notify_tool"
-    description: str = "Sends a mock notification to a customer."
-    args_schema: Type[BaseModel] = NotifyToolInput
-
-    def _run(self, customer_id: str, message: str, channel: str = "email"):
-        """
-        Sends a mock notification to a customer.
-        """
-
-        customer = customers_df[
-            customers_df["customer_id"] == customer_id
-        ]
-
-        if customer.empty:
-            return {
-                "status": "failed",
-                "message": f"Customer '{customer_id}' not found."
-            }
-
-        customer = customer.iloc[0]
-
-        if channel.lower() == "email" or "phone" not in customer.index:
-            contact = customer["email"]
-        else:
-            contact = customer["phone"]
-
-        print(f"{channel.upper()} sent to {contact}: {message}")
-
-        return {
-            "status": "sent",
-            "channel": channel,
-            "customer_id": customer_id,
-            "contact": contact,
-            "message": message
-        }
-
-
-notify_tool = NotifyTool()
+@tool("Send Multi-Channel System Notification")
+def send_system_notification(recipient_id: str, channel: str, message: str) -> str:
+    """
+    Dispatches alerts or status updates over a requested medium (Email, Slack, SMS).
+    If recipient_id is a customer_id, matches and extracts contact emails automatically.
+    """
+    try:
+        df = pd.read_csv(CUSTOMERS_CSV)
+        match = df[df['customer_id'].astype(str).str.upper() == recipient_id.strip().upper()]
+        
+        target_name = recipient_id
+        if not match.empty:
+            target_name = f"{match.iloc[0]['customer_name']} ({match.iloc[0]['email']})"
+            
+        banner = f"--- [MOCK NOTIFICATION VIA {channel.upper()}] ---"
+        print(f"\n{banner}\nTo: {target_name}\nContent: {message}\n--------------------------------------\n")
+        return f"Notification cleanly simulated and sent to {target_name}."
+    except Exception:
+        # Fallback if parsing fails or record doesn't exist
+        print(f"\n--- [MOCK NOTIFICATION VIA {channel.upper()}] ---\nTo: {recipient_id}\nContent: {message}\n")
+        return f"Notification cleanly simulated and sent to {recipient_id}."

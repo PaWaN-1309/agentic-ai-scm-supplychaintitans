@@ -1,9 +1,8 @@
-streamlit==1.58.0
-streamlit-antd-components==0.3.2
-pandas==3.0.3
-plotly==6.8.0
-langgraph==1.2.7
-crewai==1.15.1
-langchain-openai==1.3.3
-python-dotenv==1.2.2
-pydantic==2.12.5
+langchain
+langchain-openai
+langchain-core
+langgraph
+crewai
+pandas
+python-dotenv
+azure-ai-inference

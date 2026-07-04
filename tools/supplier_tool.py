@@ -1,77 +1,31 @@
-from typing import Type
+import pandas as pd  # type: ignore
+from crewai.tools import tool  # type: ignore
+from config.config import SUPPLIERS_CSV, SUPPLIER_CATALOG_CSV
 
-import pandas as pd
-from crewai.tools import BaseTool
-from pydantic import BaseModel, Field
-
-# Load CSVs once
-catalog_df = pd.read_csv("data/supplier_catalog.csv")
-supplier_df = pd.read_csv("data/suppliers.csv")
-products_df = pd.read_csv("data/products.csv")
-
-
-class SupplierToolInput(BaseModel):
-    sku: str = Field(..., description="SKU to look up the best supplier for")
-
-
-class SupplierTool(BaseTool):
-    name: str = "supplier_tool"
-    description: str = "Returns the best supplier details for a given SKU or product name."
-    args_schema: Type[BaseModel] = SupplierToolInput
-
-    def _run(self, sku: str):
-        """
-        Returns the best supplier details for a given SKU or product name.
-
-        Input:
-            SKU or product name (e.g., ELC-1001 or Wireless Earbuds Pro)
-
-        Returns:
-            Supplier Name
-            Delivery Time
-            Supplier Rating
-            Price
-        """
-
-        query = sku.lower().strip()
-
-        matched_products = products_df[
-            (products_df["sku"].str.lower() == query) |
-            (products_df["product_name"].str.lower() == query)
+@tool("Fetch Supplier Quotes and Details")
+def get_supplier_quotes(sku: str) -> str:
+    """
+    Retrieves full procurement quotation metrics (unit_cost, moq, lead_time_days) matched against 
+    vendor operational stats (reliability_score, on_time_rate) for any given SKU.
+    """
+    try:
+        catalog = pd.read_csv(SUPPLIER_CATALOG_CSV)
+        vendors = pd.read_csv(SUPPLIERS_CSV)
+        
+        sku_upper = sku.strip().upper()
+        catalog_matches = catalog[catalog['sku'].str.upper() == sku_upper]
+        
+        if catalog_matches.empty:
+            return f"No certified vendors found in supplier catalog for SKU {sku_upper}."
+        
+        # Merge catalog listings with core supplier scores automatically
+        merged = pd.merge(catalog_matches, vendors, on="supplier_id", how="left")
+        
+        target_view = [
+            'supplier_id', 'supplier_name', 'unit_cost', 'moq', 
+            'lead_time_days', 'reliability_score', 'on_time_rate'
         ]
-
-        if matched_products.empty:
-            return {
-                "message": f"No product found for '{sku}'."
-            }
-
-        resolved_sku = matched_products.iloc[0]["sku"]
-
-        # Find suppliers for the resolved SKU
-        catalog = catalog_df[
-            catalog_df["sku"].str.lower() == resolved_sku.lower()
-        ]
-
-        if catalog.empty:
-            return {
-                "message": f"No supplier found for '{sku}'."
-            }
-
-        # Choose the cheapest supplier
-        best = catalog.sort_values("unit_cost").iloc[0]
-
-        supplier = supplier_df[
-            supplier_df["supplier_id"] == best["supplier_id"]
-        ].iloc[0]
-
-        return {
-            "SKU": best["sku"],
-            "Supplier Name": supplier["supplier_name"],
-            "Price": float(best["unit_cost"]),
-            "Delivery Time": int(best["lead_time_days"]),
-            "Supplier Rating": round(float(supplier["reliability_score"]) * 5, 2),
-            "Available Quantity": int(best["available_qty"])
-        }
-
-
-supplier_tool = SupplierTool()
+        existing_view = [c for c in target_view if c in merged.columns]
+        return merged[existing_view].to_string(index=False)
+    except Exception as e:
+        return f"Error loading procurement listings: {str(e)}"

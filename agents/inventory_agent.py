@@ -1,16 +1,14 @@
-from crewai import Agent # type: ignore
+from crewai import Agent  # type: ignore
 from config.config import llm
-from tools.inventory_tool import inventory_tool # type: ignore
+from tools.inventory_tool import query_inventory_db, update_inventory_stock
 
-inventory_agent = Agent(
-    name="InventoryAgent",
-    role="Inventory Monitoring Specialist",
-    goal="Monitor inventory levels, identify low-stock products, \
-            and provide accurate inventory status to the supply chain manager.",
-    backstory="You are an experienced inventory analyst responsible for monitoring \
-        warehouse stock levels. You help identify products that require \
-        replenishment before stock shortages occur.",
-    tools=[inventory_tool],
-    llm=llm,
-    verbose=True
-)
+def get_inventory_agent() -> Agent:
+    return Agent(
+        role="Inventory Monitoring Watcher",
+        goal="Compare active stock counts vs reorder thresholds and emit a prioritized list of items needing replenishment.",
+        backstory="You are the hyper-vigilant warehouse tracking system for HexaShop. You scan on-hand quantities across all regions to prevent severe supply deficits.",
+        tools=[query_inventory_db, update_inventory_stock],
+        llm=llm,
+        verbose=True,
+        allow_delegation=False
+    )

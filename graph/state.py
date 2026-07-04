@@ -1,37 +1,17 @@
-from typing import TypedDict, Optional
+from typing import Dict, Any, List, Optional
+from typing_extensions import TypedDict  # type: ignore
 
 class SCMState(TypedDict):
-    user_query: str
-    session_id: str
-    timestamp: str
-    sku: str
-    predicted_demand: int
-    demand_level: str
-    current_stock: int
-    reorder_level: int
-    warehouse: str
-    inventory_status: str
-    supplier_name: str
-    supplier_rating: float
-    supplier_price: float
-    delivery_time: str
-    po_number: str
-    po_quantity: int
-    po_total_cost: float
-    approval_required: bool
-    approval_status: str
-    approver: str
-    approval_comments: str
-    courier: str
-    eta: str
-    tracking_id: str
-    notification_sent: bool
-    notification_message: str
-    current_node: str
-    next_node: str
-    workflow_status: str
-    messages: list[str]
-    execution_history: list[str]
-    error: Optional[str]
-    retry_count: int
-    final_response: str
+    """
+    Shared orchestration state representing the data context 
+    passed between nodes in the supply chain workflow.
+    """
+    sku: str                             # Target SKU being evaluated
+    warehouse: str                       # Targeted warehouse location
+    current_question: str                # User prompt text (For UC-1 Q&A Routing)
+    single_agent_response: str           # Stores direct answers from UC-1 agent
+    low_stock_items: List[Dict[str, Any]]# Identified replenishment items
+    draft_po: Optional[Dict[str, Any]]   # Structured PO object from Procurement Specialist
+    po_approved: Optional[bool]          # Human Reviewer Checkpoint status: True/False/None
+    action_taken: str                    # Audit text logging completion actions
+    logs: List[str]                      # Observability text trace list

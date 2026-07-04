@@ -1,19 +1,14 @@
-from crewai import Agent # type: ignore
+from crewai import Agent  # type: ignore
 from config.config import llm
-from tools.shipping_tool import shipping_tool
+from tools.shipping_tool import get_shipping_options
 
-logistics_agent = Agent(
-    name="LogisticsAgent",
-    role="Logistics Coordinator",
-    goal="""
-        Plan shipment schedules and recommend the best logistics
-        options for product delivery.
-    """,
-    backstory="""
-        You coordinate warehouse dispatch, transportation,
-        and delivery schedules to ensure timely product movement.
-    """,
-    tools=[shipping_tool],
-    llm=llm,
-    verbose=True
-)
+def get_logistics_agent() -> Agent:
+    return Agent(
+        role="Logistics & Routing Optimizer",
+        goal="Compare available carriers on transit costs and ETAs to produce an optimized fulfilment plan for pending orders.",
+        backstory="You are an expert distribution planner at HexaShop. You minimize shipping spend and optimize routes across every coverage region.",
+        tools=[get_shipping_options],
+        llm=llm,
+        verbose=True,
+        allow_delegation=False
+    )
